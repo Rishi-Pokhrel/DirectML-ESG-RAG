@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoDiag | Technical Assistant</title>
+    <style>
+        :root {
+            --bg-dark: #1a1a1a;
+            --accent: #e74c3c;
+            --text-light: #f5f5f5;
+            --card-bg: #2d2d2d;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        header {
+            background: #000;
+            padding: 1rem 2rem;
+            border-bottom: 2px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .container {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-area {
+            flex: 1;
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            border: 1px solid #444;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            background: #444;
+            border: 1px solid #555;
+            padding: 12px;
+            color: white;
+            border-radius: 4px;
+            outline: none;
+        }
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:disabled {
+            background: #555;
+        }
+        .msg { margin-bottom: 1.5rem; }
+        .user-msg { color: var(--accent); font-weight: bold; }
+        .ai-msg { background: #333; padding: 1rem; border-radius: 8px; line-height: 1.6; }
+        .sources { font-size: 0.8rem; color: #aaa; margin-top: 0.5rem; }
+        .health-bar { font-size: 0.75rem; color: #888; }
+    </style>
+</head>
+<body>
+    <header>
+        <div><strong>AutoDiag</strong> | Automotive RAG</div>
+        <div id="health" class="health-bar">RAM: -- | Docs: --</div>
+    </header>
+    <div class="container">
+        <div id="chat" class="chat-area">
+            <div class="msg ai-msg">Welcome, Technician. How can I assist with your diagnostic today?</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="query" placeholder="Ask about transmissions, axles, or repair procedures...">
+            <button id="sendBtn" onclick="askQuery()">Query</button>
+            <button id="ingestBtn" onclick="ingest()">Re-Ingest</button>
+        </div>
+    </div>
+
+    <script>
+        const chat = document.getElementById('chat');
+        const queryInput = document.getElementById('query');
+        const healthStatus = document.getElementById('health');
+
+        async function updateHealth() {
+            try {
+                const res = await fetch('/health');
+                const data = await res.json();
+                healthStatus.innerText = `RAM: ${Math.round(data.memory_usage_mb)}MB | Docs: ${data.indexed_documents}`;
+            } catch (e) {}
+        }
+
+        async function askQuery() {
+            const query = queryInput.value.trim();
+            if(!query) return;
+
+            queryInput.value = '';
+            appendMsg(query, 'user');
+            
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/query', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({text: query})
+                });
+                const data = await res.json();
+                appendMsg(data.answer, 'ai', data.sources);
+            } catch (e) {
+                appendMsg("Error communicating with server.", 'ai');
+            }
+            btn.disabled = false;
+            updateHealth();
+        }
+
+        async function ingest() {
+            appendMsg("Re-ingesting documents... please wait.", 'ai');
+            try {
+                await fetch('/ingest', {method: 'POST'});
+                appendMsg("Ingestion complete.", 'ai');
+                updateHealth();
+            } catch(e) {}
+        }
+
+        function appendMsg(text, sender, sources = []) {
+            const div = document.createElement('div');
+            div.className = `msg ${sender}-msg`;
+            div.innerText = sender === 'user' ? `> ${text}` : text;
+            if(sender === 'ai') {
+                div.innerHTML = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                if(sources.length > 0) {
+                    const sDiv = document.createElement('div');
+                    sDiv.className = 'sources';
+                    const srcList = sources.map(s => `${s.file} (p.${s.page})`).join(', ');
+                    sDiv.innerText = `Sources: ${srcList}`;
+                    div.appendChild(sDiv);
+                }
+            }
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        queryInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') askQuery();
+        });
+
+        setInterval(updateHealth, 5000);
+        updateHealth();
+    </script>
+</body>
+</html>

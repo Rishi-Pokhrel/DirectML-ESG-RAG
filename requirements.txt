@@ -1,0 +1,30 @@
+# --- CPU-Optimized Core ---
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+
+# --- Generation (Google Gemini) ---
+google-generativeai
+langchain-google-genai
+
+# --- RAG & Data Handling ---
+chromadb
+langchain-core
+langchain-community
+pandas
+numpy
+tqdm
+
+# --- Document Processing ---
+pypdf
+unstructured
+pdfminer.six
+beautifulsoup4
+
+# --- App & Environment ---
+python-dotenv
+fastapi
+uvicorn
+# --- ipy kernals and widgets
+ipykernel
+ipywidgets

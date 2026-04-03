@@ -134,6 +134,16 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
+# AutoDiag Project Specific Ignores
+data/models/
+data/vector_db/
+data/processed/
+data/state.json
+logs/*.json
+screenshots/
+.gemini_security/
+.env
+
 # Environments
 .env
 .envrc

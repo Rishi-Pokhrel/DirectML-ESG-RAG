@@ -1,0 +1,31 @@
+{
+    "model": {
+        "name": "Qwen2.5-0.5B-Instruct-GGUF",
+        "repo": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+        "file": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "local_path": "data/models/qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "params": {
+            "n_ctx": 4096,
+            "n_threads": 2,
+            "mmap": true,
+            "temperature": 0.1,
+            "top_p": 0.9,
+            "max_tokens": 1200
+        }
+    },
+    "embedding": {
+        "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+        "device": "cpu"
+    },
+    "rag": {
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "vector_db_path": "data/vector_db",
+        "collection_name": "automotive_docs"
+    },
+    "api": {
+        "host": "0.0.0.0",
+        "port": 8000,
+        "workers": 1
+    }
+}
