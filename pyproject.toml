@@ -1,7 +1,7 @@
 [project]
 name = "directml-esg-rag"
 version = "0.1.0"
-description = "A local Retrieval-Augmented Generation (RAG) system optimized for AMD GPUs using DirectML. Built to extract and summarize key ESG pillars from complex corporate reports"
+description = "A local Retrieval-Augmented Generation (RAG) system optimized for AMD GPUs using DirectML. Built to extract and summarize exhaustive diagnostic procedures from complex automotive technical manuals."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

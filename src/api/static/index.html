@@ -78,18 +78,18 @@
         .health-bar { font-size: 0.75rem; color: #888; }
         .alert-msg { border: 2px solid var(--accent); background: #3c1e1e; }
     </style>
-</head>
-<body>
-    <header>
-        <div><strong>AutoDiag</strong> | Automotive RAG</div>
-        <div id="health" class="health-bar">RAM: -- | Docs: --</div>
-    </header>
-    <div class="container">
-        <div id="chat" class="chat-area">
-            <div class="msg ai-msg">Welcome, Technician. How can I assist with your diagnostic today?</div>
-        </div>
-        <div class="input-area">
-            <input type="text" id="query" placeholder="Ask about transmissions, axles, or repair procedures...">
+<title>AutoDiag | Technical Assistant</title>
+...
+<header>
+    <div><strong>DirectML</strong> | Automotive RAG Portal</div>
+    <div id="health" class="health-bar">RAM: -- | Docs: --</div>
+</header>
+<div class="container">
+    <div id="chat" class="chat-area">
+        <div class="msg ai-msg">Welcome, Technician. I am ready to extract diagnostic protocols from your automotive manuals. How can I assist with your teardown or repair today?</div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="query" placeholder="Ask about transmissions, axles, or repair procedures...">
             <button id="sendBtn" onclick="askQuery()">Query</button>
             <button id="ingestBtn" onclick="ingest()">Re-Ingest</button>
         </div>

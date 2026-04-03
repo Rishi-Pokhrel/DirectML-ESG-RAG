@@ -10,7 +10,7 @@ from src.ingestion.processor import DocumentProcessor
 from src.retrieval.engine import RAGEngine
 from src.retrieval.vector_store import VectorStore
 
-app = FastAPI(title="Automotive Multimodal RAG API")
+app = FastAPI(title="DirectML Automotive-RAG API")
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="src/api/static"), name="static")

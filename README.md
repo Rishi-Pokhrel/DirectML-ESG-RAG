@@ -1,4 +1,6 @@
-# AutoDiag: Precision Multimodal RAG for Automotive Diagnostics
+# DirectML Automotive-RAG: Local Diagnostic System
+
+**A local Retrieval-Augmented Generation (RAG) system optimized for AMD GPUs using DirectML. Built to extract and summarize exhaustive diagnostic procedures from complex automotive technical manuals.**
 
 ## Problem Statement
 In my experience working with automotive systems, particularly during diagnostic teardowns of automatic transmissions and drive axles, I've noticed a persistent, frustrating barrier: the shear weight and complexity of technical service manuals. These aren't just books; they are massive 300+ page PDFs filled with high-density text, exploded planetary gear views, and complex hydraulic flow charts. For an independent mechanic or a student in a high-pressure workshop, finding a specific torque spec or a "slipping transmission" diagnostic protocol is like looking for a needle in a haystack of PDFs.
