@@ -76,6 +76,7 @@
         .ai-msg { background: #333; padding: 1rem; border-radius: 8px; line-height: 1.6; }
         .sources { font-size: 0.8rem; color: #aaa; margin-top: 0.5rem; }
         .health-bar { font-size: 0.75rem; color: #888; }
+        .alert-msg { border: 2px solid var(--accent); background: #3c1e1e; }
     </style>
 </head>
 <body>
@@ -114,9 +115,8 @@
             queryInput.value = '';
             appendMsg(query, 'user');
             
-            // Add thinking message for user feedback
             const thinkingId = 'thinking-' + Date.now();
-            appendMsg("Technician is analyzing manuals... (first query may take 30-60s for model/ingest initialization)", 'ai', [], thinkingId);
+            appendMsg("Technician is analyzing manuals... (One-Click mode may take 30-60s on first run). TIP: To save time, you can click the 'Re-Ingest' button first to initialize the database separately!", 'ai', [], thinkingId);
             
             const btn = document.getElementById('sendBtn');
             btn.disabled = true;
@@ -127,13 +127,21 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({text: query})
                 });
-                const data = await res.json();
-                
-                // Remove thinking message and show real answer
+
                 const thinkingMsg = document.getElementById(thinkingId);
                 if(thinkingMsg) thinkingMsg.remove();
-                
-                appendMsg(data.answer, 'ai', data.sources);
+
+                if (res.status === 400) {
+                    const err = await res.json();
+                    if (err.detail.includes("RESOURCE_LIMIT")) {
+                        appendMsg("SYSTEM ALERT: Low hardware resources detected (Target 520MB Hardware). To prevent a system crash, please click the 'Re-Ingest' button first to prepare the database. Once initialized, the Query button will work normally.", 'ai', [], null, 'alert-msg');
+                    } else {
+                        appendMsg("System error: " + err.detail, 'ai');
+                    }
+                } else {
+                    const data = await res.json();
+                    appendMsg(data.answer, 'ai', data.sources);
+                }
             } catch (e) {
                 const thinkingMsg = document.getElementById(thinkingId);
                 if(thinkingMsg) thinkingMsg.remove();
@@ -144,17 +152,17 @@
         }
 
         async function ingest() {
-            appendMsg("Forced manual re-ingestion starting... please wait.", 'ai');
+            appendMsg("Manual ingestion starting to clear memory buffers... please wait.", 'ai');
             try {
                 await fetch('/ingest', {method: 'POST'});
-                appendMsg("Manual Ingestion complete.", 'ai');
+                appendMsg("Ingestion complete. System RAM has been flushed. You may now use the Query button.", 'ai');
                 updateHealth();
             } catch(e) {}
         }
 
-        function appendMsg(text, sender, sources = [], id = null) {
+        function appendMsg(text, sender, sources = [], id = null, extraClass = '') {
             const div = document.createElement('div');
-            div.className = `msg ${sender}-msg`;
+            div.className = `msg ${sender}-msg ${extraClass}`;
             if(id) div.id = id;
             div.innerText = sender === 'user' ? `> ${text}` : text;
             if(sender === 'ai') {

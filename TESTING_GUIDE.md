@@ -42,29 +42,36 @@ export PYTHONPATH=$PYTHONPATH:.
 python3 main.py
 ```
 
-## 5. Verification Steps
+## 5. Adaptive Resource Management (The Guardrail)
+AutoDiag features a **Hardware Guardrail System** that detects available RAM before processing the first query. This ensures the system remains stable on the target 520MB hardware.
 
-### A. Web Interface Test
-1. Open `http://localhost:8000` in your browser.
-2. Click the **"Re-Ingest"** button. 
-3. **Observation:** Check the terminal logs. You should see the system performing "Precision Micro-Chunking" on the PDFs in `sample_documents/`.
-4. **Result:** The "Docs" count in the top-right header should increase (expected: ~660 micro-chunks).
+### A. One-Click Mode (RAM > 1GB)
+On standard computers or high-spec codespaces, the system automatically detects ample memory. When you type your first query, it will:
+1. Initialize the embedding model.
+2. Ingest all technical manuals from `sample_documents/`.
+3. Flush the ingestion memory.
+4. Load the 0.5B LLM and generate your answer.
+**Observation:** You only need to click the **Query** button once.
 
-### B. Technical Query Test (Text-Based)
+### B. Safety Mode (RAM < 1GB)
+On ultra-low resource devices (like 250MB-520MB hardware), the system prevents "Memory Overlap"—a condition where loading the embedding model and the LLM simultaneously would cause an OS-level crash.
+1. When you click Query, the AI will post an **ALERT** message.
+2. The user is guided to click the **"Re-Ingest"** button first.
+3. This manually prepares the database and **flushes the RAM buffers** before the Query engine is allowed to load.
+**Observation:** This ensures the "Hacker-Proof" stability requested for field diagnostics.
+
+## 6. Verification Steps
+
+### A. Technical Query Test (Text-Based)
 Input the following query:
 > *"What are the main components of a planetary gear set?"*
 *   **Expected Result:** A structured list including the sun gear, planetary gears, and ring gear.
 
-### C. Exhaustive Diagnostic Test (Precision RAG)
+### B. Exhaustive Diagnostic Test (Precision RAG)
 Input the following query:
 > *"How do you troubleshoot a slipping automatic transmission?"*
 *   **Expected Result:** A long, bolded, step-by-step guide (10+ points) retrieved from high-density micro-chunks.
 
-### D. Resource Monitoring
-Check the header of the Web UI while querying.
-*   **Observation:** RAM usage should spike during generation but stay stable due to `mmap` and explicit garbage collection.
-
-## 6. Troubleshooting
+## 7. Troubleshooting
 *   **ModuleNotFoundError:** Ensure you ran `export PYTHONPATH=$PYTHONPATH:.` before starting the server.
-*   **OutOfMemory:** If the system crashes, check `logs/run_log.json`. Ensure `n_threads` in `config/settings.json` is set to 2 for low-RAM devices.
-*   **Empty Results:** Ensure you clicked "Re-Ingest" at least once to build the local Vector Database (`data/vector_db`).
+*   **Empty Results:** If no answer is provided, ensure you have clicked "Re-Ingest" or that the "Docs" count in the header is > 0.
