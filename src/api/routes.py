@@ -69,8 +69,26 @@ def ingest_files():
 
 @app.post("/query", response_model=QueryResponse)
 def query_rag(request: QueryRequest):
-    """Answers an automotive engineering question."""
-    global engine
+    """Answers an automotive engineering question. Auto-ingests if DB is empty."""
+    global engine, processor, vector_store
+    
+    # 1. Initialize Vector Store to check count
+    if vector_store is None:
+        vector_store = VectorStore()
+    
+    # 2. Auto-Ingest if no documents exist
+    if vector_store.get_count() == 0:
+        if processor is None:
+            processor = DocumentProcessor()
+        
+        # Use sample_documents as the authoritative source for auto-ingest
+        source_dir = "sample_documents"
+        if os.path.exists(source_dir):
+            files = [f for f in os.listdir(source_dir) if f.endswith(".pdf")]
+            for file_name in files:
+                processor.process_pdf(os.path.join(source_dir, file_name))
+    
+    # 3. Initialize Engine and Query
     if engine is None:
         engine = RAGEngine()
         

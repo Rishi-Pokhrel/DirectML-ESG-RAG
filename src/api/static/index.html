@@ -114,6 +114,10 @@
             queryInput.value = '';
             appendMsg(query, 'user');
             
+            // Add thinking message for user feedback
+            const thinkingId = 'thinking-' + Date.now();
+            appendMsg("Technician is analyzing manuals... (first query may take 30-60s for model/ingest initialization)", 'ai', [], thinkingId);
+            
             const btn = document.getElementById('sendBtn');
             btn.disabled = true;
 
@@ -124,8 +128,15 @@
                     body: JSON.stringify({text: query})
                 });
                 const data = await res.json();
+                
+                // Remove thinking message and show real answer
+                const thinkingMsg = document.getElementById(thinkingId);
+                if(thinkingMsg) thinkingMsg.remove();
+                
                 appendMsg(data.answer, 'ai', data.sources);
             } catch (e) {
+                const thinkingMsg = document.getElementById(thinkingId);
+                if(thinkingMsg) thinkingMsg.remove();
                 appendMsg("Error communicating with server.", 'ai');
             }
             btn.disabled = false;
@@ -133,17 +144,18 @@
         }
 
         async function ingest() {
-            appendMsg("Re-ingesting documents... please wait.", 'ai');
+            appendMsg("Forced manual re-ingestion starting... please wait.", 'ai');
             try {
                 await fetch('/ingest', {method: 'POST'});
-                appendMsg("Ingestion complete.", 'ai');
+                appendMsg("Manual Ingestion complete.", 'ai');
                 updateHealth();
             } catch(e) {}
         }
 
-        function appendMsg(text, sender, sources = []) {
+        function appendMsg(text, sender, sources = [], id = null) {
             const div = document.createElement('div');
             div.className = `msg ${sender}-msg`;
+            if(id) div.id = id;
             div.innerText = sender === 'user' ? `> ${text}` : text;
             if(sender === 'ai') {
                 div.innerHTML = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
