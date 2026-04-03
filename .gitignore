@@ -139,20 +139,21 @@ data/models/
 data/vector_db/
 data/processed/
 data/state.json
+data/*.docx
+data/assignment.md
+data/raw/
 logs/*.json
 screenshots/
+plan.md
+PROJECT_GUIDELINES.md
 .gemini_security/
 .env
 
-# Environments
-.env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+# Python Byte-code / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
 
 # Spyder project settings
 .spyderproject
