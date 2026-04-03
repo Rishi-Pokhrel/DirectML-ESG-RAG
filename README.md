@@ -11,6 +11,27 @@ Furthermore, these technicians often operate in environments with limited hardwa
 
 ## Architecture Overview
 The system follows a modular "Precision RAG" pipeline:
+
+```mermaid
+graph TD
+    subgraph Ingestion
+        A[PDF Documents] --> B[pypdf Parser]
+        B --> C[Precision Micro-Chunking]
+        C --> D[SentenceTransformer]
+        D --> E[(ChromaDB)]
+    end
+    subgraph Query_Pipeline
+        F[User Query] --> G[Vector Store Query]
+        E --> G
+        G --> H[Context Snippets]
+        H --> I[Qwen-0.5B LLM]
+        I --> J[Technical Answer]
+    end
+    subgraph Monitoring
+        K[FastAPI /health] --> L[psutil Metrics]
+    end
+```
+
 1.  **Ingestion:** PDFs are parsed using `pypdf`. Technical text is split into high-density 500-character "Micro-Chunks" to ensure no diagnostic step is lost in large chunks. Images are identified for future multimodal synthesis via Gemini Vision.
 2.  **Retrieval:** Uses `ChromaDB` (persistent) and `SentenceTransformers` (all-MiniLM-L6-v2) for CPU-efficient vector search. We retrieve the top 10 most relevant micro-chunks to maximize technical context density.
 3.  **Inference:** Employs `Qwen2.5-0.5B-Instruct` in a 4-bit GGUF format via `llama-cpp-python`. The model uses `mmap` to keep the memory footprint below the 520MB target during generation.
