@@ -34,8 +34,8 @@ graph TD
     end
 ```
 
-1.  **Ingestion:** PDFs are parsed using `pypdf`. Technical text is split into high-density 500-character "Micro-Chunks" to ensure no diagnostic step is lost in large chunks. Images are identified for future multimodal synthesis via Gemini Vision.
-2.  **Retrieval:** Uses `ChromaDB` (persistent) and `SentenceTransformers` (all-MiniLM-L6-v2) for CPU-efficient vector search. We retrieve the top 10 most relevant micro-chunks to maximize technical context density.
+1.  **Ingestion:** PDFs are parsed using `pypdf` and `pdfplumber`. Technical text is split into high-density 500-character "Micro-Chunks" to ensure no diagnostic step is lost. Tables are extracted with precise boundary detection. Images are analyzed using Gemini Vision 2.5 Flash for diagram understanding.
+2.  **Retrieval:** Uses `ChromaDB` (persistent) and `SentenceTransformers` (all-MiniLM-L6-v2) for CPU-efficient vector search. We retrieve the top 10 most relevant micro-chunks (text, tables, or image descriptions) to maximize technical context density.
 3.  **Inference:** Employs `Qwen2.5-0.5B-Instruct` in a 4-bit GGUF format via `llama-cpp-python`. The model uses `mmap` to keep the memory footprint below the 520MB target during generation.
 4.  **Web Interface:** A sleek, dark-themed FastAPI portal for real-time querying and health monitoring.
 
@@ -43,6 +43,8 @@ graph TD
 - **LLM:** Qwen2.5-0.5B (4-bit). Chosen for its superior technical reasoning at an extremely small size (0.5GB), fitting the 520MB RAM target.
 - **Vector Store:** ChromaDB. Lightweight, serverless, and supports persistent on-disk storage.
 - **Parser:** pypdf. Low memory overhead compared to heavier OCR-based libraries.
+- **Table Extraction:** pdfplumber. Precise table boundary detection and structured data extraction from PDF documents.
+- **Image Analysis:** Gemini 2.5 Flash Vision API. Multimodal understanding of automotive technical diagrams and component images.
 - **Embedding:** all-MiniLM-L6-v2. The industry standard for high-speed, low-RAM CPU embeddings.
 
 ## Setup Instructions (For Accessors)
@@ -80,17 +82,94 @@ To run this project after cloning, follow these exact steps to ensure the refere
 7. **Access the Interface:** Open `http://localhost:8000` in your browser.
 
 ## API Documentation
+
+### Endpoints Overview
 - `GET /`: Serves the web interface.
 - `GET /health`: Returns RAM usage, document count, and status.
-- `POST /ingest`: Triggers precision ingestion of all PDFs in `data/raw/`.
+- `POST /ingest`: Triggers multimodal ingestion of all PDFs in `sample_documents/`.
 - `POST /query`: Accepts a JSON `{"text": "query"}` and returns an exhaustive technical answer with source citations.
 
+### Sample API Usage
+
+**Health Check:**
+```bash
+curl -X GET "http://localhost:8000/health"
+```
+**Response:**
+```json
+{
+  "status": "online",
+  "memory_usage_mb": 546.22,
+  "indexed_documents": 703,
+  "available_ram_mb": 2770.46
+}
+```
+
+**Query Endpoint:**
+```bash
+curl -X POST "http://localhost:8000/query" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "What are the main components of a planetary gear set?"}'
+```
+**Response:**
+```json
+{
+  "query": "What are the main components of a planetary gear set?",
+  "answer": "The main components of a planetary gear set include the sun gear (central gear), planetary gears (rotate around the sun gear), ring gear (outer gear), and carrier (holds planetary gears)...",
+  "sources": [
+    {"file": "AutoTrans_9781284122039_samplech11.pdf", "page": 5, "type": "text"},
+    {"file": "Crawfords_Auto_Repair_Guide.pdf", "page": 64, "type": "table"}
+  ]
+}
+```
+
+**Ingestion:**
+```bash
+curl -X POST "http://localhost:8000/ingest"
+```
+**Response:**
+```json
+{
+  "message": "Ingestion completed",
+  "processed_files": [
+    "AutoTrans_9781284122039_samplech11.pdf",
+    "Crawfords_Auto_Repair_Guide.pdf",
+    "Passenger Car Drive Axle Technology.pdf"
+  ]
+}
+```
+
 ## Screenshots
-*(Screenshots to be placed in screenshots/ folder per checklist)*
-- `Swagger UI`: Available at `/docs`.
-- `Technical Query`: Demonstrating step-by-step diagnostic output.
-- `Health Check`: Showing resource efficiency.
+
+### 1. Swagger UI - Interactive API Documentation
+![Swagger UI](screenshots/1_swagger_ui.png)
+*FastAPI automatic documentation showing all available endpoints with request/response schemas*
+
+### 2. Health Endpoint - System Status
+![Health Check](screenshots/2_health_endpoint.png)
+*System monitoring showing memory usage and 703 indexed multimodal documents (text + tables + images)*
+
+### 3. Successful Multimodal Ingestion
+![Ingestion Success](screenshots/3_ingestion_success.png)
+*Completed processing of 3 automotive technical PDFs with table and image extraction*
+
+### 4. Text Query - Technical Question Answering
+![Text Query](screenshots/4_text_query.png)
+*Query: "What are the main components of a planetary gear set?" - Retrieving text-based technical content*
+
+### 5. Table Query - Structured Data Retrieval
+![Table Query](screenshots/5_table_query.png)
+*Retrieving shift solenoid specifications from extracted PDF tables*
+
+### 6. Image Query - Multimodal Diagram Analysis
+![Image Query](screenshots/6_image_query.png)
+*Gemini Vision 2.5 analysis of automotive technical diagrams and component images*
 
 ## Limitations & Future Work
-- **Multimodal Synthesis:** Currently detects images; full integration with Gemini Vision for diagram-to-text synthesis is the next milestone.
-- **Hardware Scale:** While optimized for 520MB, the Python runtime environment (libraries) adds overhead that could be further reduced by moving to a Rust or C++ backend.
+- **Answer Quality:** The 0.5B parameter model occasionally shows repetition in complex multi-step queries. For production environments, upgrading to Qwen2.5-1.5B or using Gemini API for generation would improve response coherence.
+- **Image Processing Optimization:** Currently processes 5 images per PDF to balance API costs and speed. Full processing of all diagrams can be enabled by adjusting `max_images_per_pdf` parameter.
+- **Hardware Scale:** While optimized for low-memory environments, the Python runtime adds overhead. Future optimizations could include Rust/C++ backends or more aggressive quantization.
+
+## Environment Setup
+
+This project requires a Google Gemini API key for image analysis features. Create a `.env` file from the template and add your credentials.

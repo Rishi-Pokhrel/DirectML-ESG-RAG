@@ -16,8 +16,8 @@ class GeminiClient:
             logger.warning("GOOGLE_API_KEY not found in .env. Multimodal vision tasks will fail.")
         else:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel("gemini-1.5-flash")
-            logger.info("Gemini 1.5 Flash client initialized.")
+            self.model = genai.GenerativeModel("gemini-2.5-flash")
+            logger.info("Gemini 2.5 Flash client initialized.")
 
     def summarize_image(self, image_data: bytes, prompt: str = "Describe this automotive diagram/image in detail for technical documentation.") -> str:
         """Sends an image to Gemini for technical description."""

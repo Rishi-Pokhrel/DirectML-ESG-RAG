@@ -15,9 +15,9 @@ def evaluate_system():
     processor = DocumentProcessor()
     
     raw_files = [
-        "data/raw/AutoTrans_9781284122039_samplech11.pdf",
-        "data/raw/Crawfords_Auto_Repair_Guide.pdf",
-        "data/raw/Passenger Car Drive Axle Technology.pdf"
+        "sample_documents/AutoTrans_9781284122039_samplech11.pdf",
+        "sample_documents/Crawfords_Auto_Repair_Guide.pdf",
+        "sample_documents/Passenger Car Drive Axle Technology.pdf"
     ]
     
     for pdf in raw_files:

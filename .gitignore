@@ -143,9 +143,9 @@ data/*.docx
 data/assignment.md
 data/raw/
 logs/*.json
-screenshots/
 plan.md
 PROJECT_GUIDELINES.md
+Project_Activity_Summary.md
 .gemini_security/
 .env
 
