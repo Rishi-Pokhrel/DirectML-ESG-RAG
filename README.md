@@ -12,7 +12,7 @@ Furthermore, most modern "AI assistants" are useless in a real garage. They requ
 **AutoDiag** is my solution to this. It's a precision-engineered RAG system designed specifically for the low-resource hardware we actually use in the field. By using "Micro-Chunking" to extract high-density technical snippets and running a 4-bit quantized model that fits in under 520MB of RAM, I've created a tool that provides step-by-step diagnostic protocols from my own library of automotive manuals. It doesn't just "summarize"—it retrieves the actual, granular technical steps needed on the shop floor.
 
 ## Architecture Overview
-The system follows a modular "Precision RAG" pipeline:
+The system follows a modular "Precision RAG" pipeline with a dedicated **Hardware Guardrail System** to ensure stability on low-resource workshop tablets (e.g., 520MB RAM targets):
 
 ```mermaid
 graph TD
@@ -29,22 +29,22 @@ graph TD
         H --> I[Qwen-0.5B LLM]
         I --> J[Technical Answer]
     end
-    subgraph Monitoring
-        K[FastAPI /health] --> L[psutil Metrics]
+    subgraph Guardrails
+        K[Available RAM Check] -- < 1GB --> L[Safety Mode: Manual Ingest Required]
+        K -- > 1GB --> M[One-Click Mode: Auto-Ingest + Query]
     end
 ```
 
-1.  **Ingestion:** PDFs are parsed using `pypdf` and `pdfplumber`. Technical text is split into high-density 500-character "Micro-Chunks" to ensure no diagnostic step is lost. Tables are extracted with precise boundary detection. Images are analyzed using Gemini Vision 2.5 Flash for diagram understanding.
+1.  **Ingestion:** PDFs are parsed using `pypdf` and `pdfplumber`. Technical text is split into high-density 500-character "Micro-Chunks" to ensure no diagnostic step is lost. Tables are extracted with precise boundary detection. Images are analyzed using **Gemini 2.0 Flash** for diagram understanding.
 2.  **Retrieval:** Uses `ChromaDB` (persistent) and `SentenceTransformers` (all-MiniLM-L6-v2) for CPU-efficient vector search. We retrieve the top 10 most relevant micro-chunks (text, tables, or image descriptions) to maximize technical context density.
 3.  **Inference:** Employs `Qwen2.5-0.5B-Instruct` in a 4-bit GGUF format via `llama-cpp-python`. The model uses `mmap` to keep the memory footprint below the 520MB target during generation.
-4.  **Web Interface:** A sleek, dark-themed FastAPI portal for real-time querying and health monitoring.
+4.  **Hardware Guardrail System:** AutoDiag features an **Adaptive Resource Management** logic to prevent OS-level crashes on target hardware. It switches between "One-Click Mode" (for high-RAM environments) and "Safety Mode" (for low-RAM hardware) to ensure memory overlap does not occur.
 
 ## Technology Choices
-- **LLM:** Qwen2.5-0.5B (4-bit). Chosen for its superior technical reasoning at an extremely small size (0.5GB), fitting the 520MB RAM target.
+- **LLM:** Qwen2.5-0.5B (4-bit). Chosen for its superior technical reasoning at an extremely small size (~469MB), fitting the 520MB RAM target.
 - **Vector Store:** ChromaDB. Lightweight, serverless, and supports persistent on-disk storage.
-- **Parser:** pypdf. Low memory overhead compared to heavier OCR-based libraries.
-- **Table Extraction:** pdfplumber. Precise table boundary detection and structured data extraction from PDF documents.
-- **Image Analysis:** Gemini 2.5 Flash Vision API. Multimodal understanding of automotive technical diagrams and component images.
+- **Parser:** pypdf & pdfplumber. Low memory overhead compared to heavier OCR-based libraries, with precise table extraction.
+- **Image Analysis:** Gemini 2.0 Flash Vision API. Multimodal understanding of automotive technical diagrams and component images.
 - **Embedding:** all-MiniLM-L6-v2. The industry standard for high-speed, low-RAM CPU embeddings.
 
 ## Setup Instructions (For Accessors)
@@ -76,6 +76,7 @@ To run this project after cloning, follow these exact steps to ensure the refere
    ```
 6. **Launch the Application:**
    ```bash
+   # CRITICAL: Ensure PYTHONPATH is set for module resolution
    export PYTHONPATH=$PYTHONPATH:.
    python3 main.py
    ```
@@ -143,27 +144,31 @@ curl -X POST "http://localhost:8000/ingest"
 
 ### 1. Swagger UI - Interactive API Documentation
 ![Swagger UI](screenshots/1_swagger_ui.png)
-*FastAPI automatic documentation showing all available endpoints with request/response schemas*
+*FastAPI automatic documentation showing all available endpoints.*
 
 ### 2. Health Endpoint - System Status
 ![Health Check](screenshots/2_health_endpoint.png)
-*System monitoring showing memory usage and 703 indexed multimodal documents (text + tables + images)*
+*System monitoring showing memory usage and indexed multimodal documents.*
 
 ### 3. Successful Multimodal Ingestion
 ![Ingestion Success](screenshots/3_ingestion_success.png)
-*Completed processing of 3 automotive technical PDFs with table and image extraction*
+*Completed processing of 3 automotive technical PDFs with table and image extraction.*
 
 ### 4. Text Query - Technical Question Answering
 ![Text Query](screenshots/4_text_query.png)
-*Query: "What are the main components of a planetary gear set?" - Retrieving text-based technical content*
+*Query: "What are the main components of a planetary gear set?" - Retrieving text-based technical content.*
 
 ### 5. Table Query - Structured Data Retrieval
 ![Table Query](screenshots/5_table_query.png)
-*Retrieving shift solenoid specifications from extracted PDF tables*
+*Retrieving shift solenoid specifications from extracted PDF tables.*
 
 ### 6. Image Query - Multimodal Diagram Analysis
 ![Image Query](screenshots/6_image_query.png)
-*Gemini Vision 2.5 analysis of automotive technical diagrams and component images*
+*Gemini Vision analysis of automotive technical diagrams and component images.*
+
+### 7. Bonus: Adaptive RAM Guardrail
+![Bonus Screenshot](screenshots/7_bonus_screenshot.png)
+*Demonstration of the Safety Mode alert preventing memory overlap on low-RAM hardware.*
 
 ## Limitations & Future Work
 - **Answer Quality:** The 0.5B parameter model occasionally shows repetition in complex multi-step queries. For production environments, upgrading to Qwen2.5-1.5B or using Gemini API for generation would improve response coherence.
@@ -171,5 +176,4 @@ curl -X POST "http://localhost:8000/ingest"
 - **Hardware Scale:** While optimized for low-memory environments, the Python runtime adds overhead. Future optimizations could include Rust/C++ backends or more aggressive quantization.
 
 ## Environment Setup
-
 This project requires a Google Gemini API key for image analysis features. Create a `.env` file from the template and add your credentials.
